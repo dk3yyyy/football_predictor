@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# Environments
+.env
+
+# Testing
+.pytest_cache/
+htmlcov/
+.coverage
+
+# IDEs / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Logs
+*.log
+
+# Databases
+*.db
+*.sqlite3
+
+# Models
+models/*.joblib
