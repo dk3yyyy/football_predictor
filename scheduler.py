@@ -17,14 +17,14 @@ import signal
 import sys
 from datetime import datetime
 
+from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
-from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
 
-from config.settings import SCHEDULE, LEAGUES, CURRENT_SEASON
+from config.settings import CURRENT_SEASON, LEAGUES, SCHEDULE
 from db.database import Database
-from scrapers.football_data import FootballDataScraper
 from scrapers.fbref import FBrefScraper
+from scrapers.football_data import FootballDataScraper
 from scrapers.injuries import InjuryScraper
 from scrapers.odds import OddsScraper
 
@@ -40,6 +40,7 @@ db = Database()
 
 
 # ── Individual job functions ──────────────────────────────────────────────────
+
 
 def job_fixtures():
     """Scrape and store upcoming fixtures for all API leagues."""
@@ -60,7 +61,7 @@ def job_results():
     scraper = FootballDataScraper()
     all_results = scraper.scrape_all_results(days_back=3)
     total = 0
-    for league_key, results in all_results.items():
+    for _league_key, results in all_results.items():
         n = db.upsert_matches(results)
         total += n
     logger.info("JOB results — done (%d total)", total)
@@ -73,14 +74,17 @@ def _backfill_match_details(scraper: FootballDataScraper):
     """Fetch lineups + events for recently finished matches lacking detail."""
     with db.engine.connect() as conn:
         from sqlalchemy import text
-        rows = conn.execute(text("""
+
+        rows = conn.execute(
+            text("""
             SELECT m.match_id FROM matches m
             LEFT JOIN match_details md ON m.match_id = md.match_id
             WHERE m.status = 'FINISHED'
               AND md.match_id IS NULL
             ORDER BY m.utc_date DESC
             LIMIT 20
-        """)).fetchall()
+        """)
+        ).fetchall()
 
     for (match_id,) in rows:
         try:
@@ -128,7 +132,7 @@ def job_odds():
     try:
         all_odds = scraper.scrape_all_leagues()
         total = 0
-        for league_key, records in all_odds.items():
+        for _league_key, records in all_odds.items():
             n = db.insert_odds(records)
             total += n
         logger.info("JOB odds — done (%d records)", total)
@@ -139,11 +143,11 @@ def job_odds():
 # ── Job registry ──────────────────────────────────────────────────────────────
 
 JOBS = {
-    "fixtures":    job_fixtures,
-    "results":     job_results,
+    "fixtures": job_fixtures,
+    "results": job_results,
     "squad_stats": job_squad_stats,
-    "injuries":    job_injuries,
-    "odds":        job_odds,
+    "injuries": job_injuries,
+    "odds": job_odds,
 }
 
 
@@ -158,6 +162,7 @@ def run_job(name: str):
 
 # ── Scheduler setup ───────────────────────────────────────────────────────────
 
+
 def on_job_executed(event):
     logger.info("Job '%s' completed at %s", event.job_id, datetime.now().isoformat())
 
@@ -169,7 +174,7 @@ def on_job_error(event):
 def build_scheduler() -> BlockingScheduler:
     scheduler = BlockingScheduler(timezone="UTC")
     scheduler.add_listener(on_job_executed, EVENT_JOB_EXECUTED)
-    scheduler.add_listener(on_job_error,    EVENT_JOB_ERROR)
+    scheduler.add_listener(on_job_error, EVENT_JOB_ERROR)
 
     for job_name, cron_expr in SCHEDULE.items():
         fn = JOBS.get(job_name)
@@ -181,8 +186,8 @@ def build_scheduler() -> BlockingScheduler:
             trigger=CronTrigger.from_crontab(cron_expr, timezone="UTC"),
             id=job_name,
             name=job_name,
-            misfire_grace_time=3600,    # run even if up to 1hr late
-            coalesce=True,              # skip duplicates if delayed
+            misfire_grace_time=3600,  # run even if up to 1hr late
+            coalesce=True,  # skip duplicates if delayed
         )
         logger.info("Scheduled '%s' → %s (UTC)", job_name, cron_expr)
 
@@ -206,7 +211,7 @@ def main():
         scheduler.shutdown(wait=False)
         sys.exit(0)
 
-    signal.signal(signal.SIGINT,  handle_shutdown)
+    signal.signal(signal.SIGINT, handle_shutdown)
     signal.signal(signal.SIGTERM, handle_shutdown)
 
     logger.info("Scheduler running. Press Ctrl+C to stop.")

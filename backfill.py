@@ -9,10 +9,11 @@ Recommended: run with at least 3 seasons (2022, 2023, 2024).
 """
 
 import logging
-from config.settings import SEASONS, LEAGUES
+
+from config.settings import LEAGUES, SEASONS
 from db.database import Database
-from scrapers.football_data import FootballDataScraper
 from scrapers.fbref import FBrefScraper
+from scrapers.football_data import FootballDataScraper
 
 logging.basicConfig(
     level=logging.INFO,

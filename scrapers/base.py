@@ -10,10 +10,10 @@ Provides:
   - robots.txt-aware delays
 """
 
-import time
-import random
 import logging
+import random
 import threading
+import time
 from abc import ABC, abstractmethod
 from typing import Optional
 
@@ -22,13 +22,12 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 from config.settings import (
-    USER_AGENTS,
-    REQUEST_TIMEOUT,
     MAX_RETRIES,
+    PROXY_URL,
+    REQUEST_TIMEOUT,
     RETRY_BACKOFF,
     USE_PROXY,
-    PROXY_URL,
-    LOG_LEVEL,
+    USER_AGENTS,
 )
 
 logger = logging.getLogger(__name__)
@@ -38,9 +37,9 @@ class RateLimiter:
     """Thread-safe token bucket rate limiter."""
 
     def __init__(self, calls: int, period: float):
-        self.calls  = calls
+        self.calls = calls
         self.period = period
-        self._lock  = threading.Lock()
+        self._lock = threading.Lock()
         self._timestamps: list[float] = []
 
     def wait(self):
@@ -66,15 +65,15 @@ class BaseScraper(ABC):
     """
 
     # Override in subclass if the source needs a specific rate limit
-    RATE_LIMIT_CALLS  = 30
-    RATE_LIMIT_PERIOD = 60.0   # seconds
+    RATE_LIMIT_CALLS = 30
+    RATE_LIMIT_PERIOD = 60.0  # seconds
 
     def __init__(self, delay_min: float = 2.0, delay_max: float = 5.0):
-        self.delay_min   = delay_min
-        self.delay_max   = delay_max
-        self.session     = self._build_session()
+        self.delay_min = delay_min
+        self.delay_max = delay_max
+        self.session = self._build_session()
         self._rate_limiter = RateLimiter(self.RATE_LIMIT_CALLS, self.RATE_LIMIT_PERIOD)
-        self.logger      = logging.getLogger(self.__class__.__name__)
+        self.logger = logging.getLogger(self.__class__.__name__)
 
     # ── Session setup ─────────────────────────────────────────────────────────
 
@@ -90,7 +89,7 @@ class BaseScraper(ABC):
         )
         adapter = HTTPAdapter(max_retries=retry_strategy)
         session.mount("https://", adapter)
-        session.mount("http://",  adapter)
+        session.mount("http://", adapter)
 
         if USE_PROXY and PROXY_URL:
             session.proxies = {"http": PROXY_URL, "https": PROXY_URL}
@@ -100,12 +99,12 @@ class BaseScraper(ABC):
 
     def _rotate_headers(self) -> dict:
         return {
-            "User-Agent":      random.choice(USER_AGENTS),
+            "User-Agent": random.choice(USER_AGENTS),
             "Accept-Language": "en-US,en;q=0.9",
             "Accept-Encoding": "gzip, deflate, br",
-            "Accept":          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Connection":      "keep-alive",
-            "DNT":             "1",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Connection": "keep-alive",
+            "DNT": "1",
         }
 
     # ── Core HTTP ─────────────────────────────────────────────────────────────
@@ -151,7 +150,7 @@ class BaseScraper(ABC):
                 )
                 if attempt == MAX_RETRIES:
                     raise
-                backoff = RETRY_BACKOFF ** attempt + random.uniform(0, 1)
+                backoff = RETRY_BACKOFF**attempt + random.uniform(0, 1)
                 self.logger.info("Retrying in %.1fs", backoff)
                 time.sleep(backoff)
 
@@ -159,13 +158,13 @@ class BaseScraper(ABC):
                 self.logger.error("Connection error on %s: %s", url, exc)
                 if attempt == MAX_RETRIES:
                     raise
-                time.sleep(RETRY_BACKOFF ** attempt)
+                time.sleep(RETRY_BACKOFF**attempt)
 
             except requests.exceptions.Timeout:
                 self.logger.warning("Timeout on %s (attempt %d)", url, attempt)
                 if attempt == MAX_RETRIES:
                     raise
-                time.sleep(RETRY_BACKOFF ** attempt)
+                time.sleep(RETRY_BACKOFF**attempt)
 
     # ── Abstract interface ────────────────────────────────────────────────────
 
@@ -194,4 +193,5 @@ class BaseScraper(ABC):
 
 class ScraperError(Exception):
     """Raised when a scraper cannot recover from an error."""
+
     pass

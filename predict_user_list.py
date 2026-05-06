@@ -1,13 +1,9 @@
-import os
-import joblib
-import pandas as pd
-import numpy as np
 import warnings
 
-# Suppress XGBoost warnings
-warnings.filterwarnings('ignore')
-
 from predict_custom import predict_custom_match
+
+# Suppress XGBoost warnings
+warnings.filterwarnings("ignore")
 
 matches = [
     ("Inter", "Cagliari"),
@@ -19,7 +15,7 @@ matches = [
     ("SV 07 Elversberg", "Karlsruher SC"),
     ("Roda JC Kerkrade", "FC Emmen"),
     ("RC Lens", "Toulouse"),
-    ("Sassuolo", "Como")
+    ("Sassuolo", "Como"),
 ]
 
 if __name__ == "__main__":

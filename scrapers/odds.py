@@ -14,31 +14,31 @@ Odds often move before public news breaks — sharp bettors know
 about injuries, weather, and form before the public.
 """
 
-import re
 import json
 import logging
+import re
 from datetime import datetime
 from typing import Optional
 
 import requests
 from bs4 import BeautifulSoup
 
-from scrapers.base import BaseScraper, ScraperError
 from config.settings import (
     ODDSPORTAL_BASE_URL,
-    ODDSPORTAL_DELAY_MIN,
     ODDSPORTAL_DELAY_MAX,
+    ODDSPORTAL_DELAY_MIN,
 )
+from scrapers.base import BaseScraper, ScraperError
 
 logger = logging.getLogger(__name__)
 
 # Oddsportal URL slugs per league
 ODDSPORTAL_LEAGUES = {
     "premier_league": "/football/england/premier-league/",
-    "la_liga":        "/football/spain/laliga/",
-    "bundesliga":     "/football/germany/bundesliga/",
-    "serie_a":        "/football/italy/serie-a/",
-    "ligue_1":        "/football/france/ligue-1/",
+    "la_liga": "/football/spain/laliga/",
+    "bundesliga": "/football/germany/bundesliga/",
+    "serie_a": "/football/italy/serie-a/",
+    "ligue_1": "/football/france/ligue-1/",
     "champions_league": "/football/europe/champions-league/",
 }
 
@@ -49,7 +49,7 @@ class OddsScraper(BaseScraper):
     Converts raw decimal odds to calibrated implied probabilities.
     """
 
-    RATE_LIMIT_CALLS  = 6
+    RATE_LIMIT_CALLS = 6
     RATE_LIMIT_PERIOD = 60.0
 
     def __init__(self):
@@ -78,7 +78,7 @@ class OddsScraper(BaseScraper):
         except requests.RequestException as exc:
             raise ScraperError(f"Failed to fetch odds page: {exc}") from exc
 
-        soup    = BeautifulSoup(resp.text, "html.parser")
+        soup = BeautifulSoup(resp.text, "html.parser")
         records = self._parse_odds_table(soup, league_key)
 
         # Also try JSON embedded in page scripts (Oddsportal sometimes serves this)
@@ -95,9 +95,8 @@ class OddsScraper(BaseScraper):
         records = []
 
         # Oddsportal table has class "table-main" or similar
-        table = (
-            soup.find("table", {"class": re.compile(r"table-main", re.I)})
-            or soup.find("table", {"id": re.compile(r"odds", re.I)})
+        table = soup.find("table", {"class": re.compile(r"table-main", re.I)}) or soup.find(
+            "table", {"id": re.compile(r"odds", re.I)}
         )
         if not table:
             logger.debug("No standard odds table found, will try JSON fallback")
@@ -132,14 +131,11 @@ class OddsScraper(BaseScraper):
         away_team = parts[1].strip()
 
         # Date/time cell
-        date_cell  = row.find("td", {"class": re.compile(r"date|time", re.I)})
+        date_cell = row.find("td", {"class": re.compile(r"date|time", re.I)})
         match_date = date_cell.get_text(strip=True) if date_cell else None
 
         # Odds cells — look for cells with numeric content (decimal odds)
-        odds_cells = [
-            c for c in cells
-            if re.match(r"^\d+\.\d+$", c.get_text(strip=True))
-        ]
+        odds_cells = [c for c in cells if re.match(r"^\d+\.\d+$", c.get_text(strip=True))]
 
         home_odds = self._to_float(odds_cells[0].get_text()) if len(odds_cells) > 0 else None
         draw_odds = self._to_float(odds_cells[1].get_text()) if len(odds_cells) > 1 else None
@@ -151,21 +147,21 @@ class OddsScraper(BaseScraper):
         probs = self._remove_margin(home_odds, draw_odds, away_odds)
 
         return {
-            "source":           self.source_name,
-            "league_key":       league_key,
-            "home_team":        home_team,
-            "away_team":        away_team,
-            "match_date":       match_date,
+            "source": self.source_name,
+            "league_key": league_key,
+            "home_team": home_team,
+            "away_team": away_team,
+            "match_date": match_date,
             # Raw decimal odds
-            "odds_home":        home_odds,
-            "odds_draw":        draw_odds,
-            "odds_away":        away_odds,
+            "odds_home": home_odds,
+            "odds_draw": draw_odds,
+            "odds_away": away_odds,
             # Implied probabilities (margin removed)
-            "prob_home":        probs.get("home"),
-            "prob_draw":        probs.get("draw"),
-            "prob_away":        probs.get("away"),
+            "prob_home": probs.get("home"),
+            "prob_draw": probs.get("draw"),
+            "prob_away": probs.get("away"),
             "market_overround": probs.get("overround"),
-            "scraped_at":       datetime.utcnow().isoformat(),
+            "scraped_at": datetime.utcnow().isoformat(),
         }
 
     # ── JSON data fallback ────────────────────────────────────────────────────
@@ -176,7 +172,7 @@ class OddsScraper(BaseScraper):
         Try to extract it as a fallback.
         """
         # Look for window.pageProps or similar
-        pattern = re.compile(r'window\.__INITIAL_STATE__\s*=\s*(\{.*?\});', re.DOTALL)
+        pattern = re.compile(r"window\.__INITIAL_STATE__\s*=\s*(\{.*?\});", re.DOTALL)
         m = pattern.search(html)
         if not m:
             pattern2 = re.compile(r'"events"\s*:\s*(\[.*?\])', re.DOTALL)
@@ -186,8 +182,8 @@ class OddsScraper(BaseScraper):
                 return []
 
         try:
-            data    = json.loads(m.group(1))
-            events  = data if isinstance(data, list) else data.get("events", [])
+            data = json.loads(m.group(1))
+            events = data if isinstance(data, list) else data.get("events", [])
             records = []
             for ev in events:
                 record = self._normalise_json_event(ev, league_key)
@@ -210,19 +206,19 @@ class OddsScraper(BaseScraper):
         probs = self._remove_margin(home_odds, draw_odds, away_odds)
 
         return {
-            "source":           self.source_name,
-            "league_key":       league_key,
-            "home_team":        ev.get("home_team") or ev.get("home_name", ""),
-            "away_team":        ev.get("away_team") or ev.get("away_name", ""),
-            "match_date":       ev.get("date") or ev.get("start_time"),
-            "odds_home":        home_odds,
-            "odds_draw":        draw_odds,
-            "odds_away":        away_odds,
-            "prob_home":        probs.get("home"),
-            "prob_draw":        probs.get("draw"),
-            "prob_away":        probs.get("away"),
+            "source": self.source_name,
+            "league_key": league_key,
+            "home_team": ev.get("home_team") or ev.get("home_name", ""),
+            "away_team": ev.get("away_team") or ev.get("away_name", ""),
+            "match_date": ev.get("date") or ev.get("start_time"),
+            "odds_home": home_odds,
+            "odds_draw": draw_odds,
+            "odds_away": away_odds,
+            "prob_home": probs.get("home"),
+            "prob_draw": probs.get("draw"),
+            "prob_away": probs.get("away"),
             "market_overround": probs.get("overround"),
-            "scraped_at":       datetime.utcnow().isoformat(),
+            "scraped_at": datetime.utcnow().isoformat(),
         }
 
     # ── Probability maths ─────────────────────────────────────────────────────
@@ -255,7 +251,7 @@ class OddsScraper(BaseScraper):
             return result
 
         raw_probs = {k: 1.0 / v for k, v in valid.items()}
-        total     = sum(raw_probs.values())
+        total = sum(raw_probs.values())
         overround = round(total - 1.0, 4)
 
         for k, raw in raw_probs.items():

@@ -1,0 +1,108 @@
+[project]
+name = "football-predictor"
+version = "0.1.0"
+description = "An end-to-end Machine Learning pipeline that predicts football match outcomes and highlights value bets."
+authors = [
+    { name = "The football_predictor contributors" }
+]
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "altair==6.0.0",
+    "annotated-doc==0.0.4",
+    "annotated-types==0.7.0",
+    "anyio==4.13.0",
+    "APScheduler==3.11.2",
+    "attrs==26.1.0",
+    "beautifulsoup4==4.14.3",
+    "blinker==1.9.0",
+    "cachetools==7.0.5",
+    "certifi==2026.2.25",
+    "charset-normalizer==3.4.6",
+    "click==8.3.1",
+    "fastapi==0.135.2",
+    "gitdb==4.0.12",
+    "GitPython==3.1.46",
+    "h11==0.16.0",
+    "idna==3.11",
+    "iniconfig==2.3.0",
+    "Jinja2==3.1.6",
+    "joblib==1.5.3",
+    "jsonschema==4.26.0",
+    "jsonschema-specifications==2025.9.1",
+    "MarkupSafe==3.0.3",
+    "narwhals==2.18.1",
+    "numpy==2.4.4",
+    "packaging==26.0",
+    "pandas==2.3.3",
+    "pillow==12.1.1",
+    "pluggy==1.6.0",
+    "protobuf==6.33.6",
+    "pyarrow==23.0.1",
+    "pydantic==2.12.5",
+    "pydantic_core==2.41.5",
+    "pydeck==0.9.1",
+    "Pygments==2.20.0",
+    "pytest==9.0.2",
+    "python-dateutil==2.9.0.post0",
+    "python-dotenv==1.2.2",
+    "pytz==2026.1.post1",
+    "referencing==0.37.0",
+    "requests==2.33.0",
+    "rpds-py==0.30.0",
+    "scikit-learn==1.8.0",
+    "scipy==1.17.1",
+    "six==1.17.0",
+    "smmap==5.0.3",
+    "soupsieve==2.8.3",
+    "SQLAlchemy==2.0.48",
+    "starlette==1.0.0",
+    "streamlit==1.55.0",
+    "tenacity==9.1.4",
+    "threadpoolctl==3.6.0",
+    "toml==0.10.2",
+    "tornado==6.5.5",
+    "typing-inspection==0.4.2",
+    "typing_extensions==4.15.0",
+    "tzdata==2025.3",
+    "tzlocal==5.3.1",
+    "urllib3==2.6.3",
+    "uvicorn==0.42.0",
+    "xgboost==3.2.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "C90", "B"]
+ignore = ["B008", "E501"]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
+exclude = ["venv", ".venv"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+
+[tool.setuptools]
+packages = ["api", "config", "dashboard", "db", "features", "models", "scrapers", "tests"]
+
+[[tool.mypy.overrides]]
+module = [
+    "requests.*",
+    "pandas.*",
+    "joblib.*",
+    "sklearn.*",
+    "xgboost.*",
+    "sqlalchemy.*",
+    "apscheduler.*",
+    "streamlit.*",
+]
+ignore_missing_imports = true

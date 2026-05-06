@@ -1,4 +1,5 @@
 import os
+
 from dotenv import load_dotenv
 
 # Load any variables from .env file securely
@@ -18,7 +19,7 @@ LEAGUES = {
     "la_liga": "PD",
     "serie_a": "SA",
     "bundesliga": "BL1",
-    "ligue_1": "FL1"
+    "ligue_1": "FL1",
 }
 
 # ====================
@@ -60,7 +61,7 @@ FBREF_COMPETITIONS = {
     "la_liga": 12,
     "serie_a": 11,
     "bundesliga": 20,
-    "ligue_1": 13
+    "ligue_1": 13,
 }
 
 # ====================
@@ -84,9 +85,9 @@ ODDSPORTAL_DELAY_MAX = 6.0
 # ====================
 
 SCHEDULE = {
-    "fixtures":    "0 2 * * *",     # Every day at 02:00 UTC
-    "results":     "0 4 * * *",     # Every day at 04:00 UTC
-    "squad_stats": "0 6 * * 1",     # Every Monday at 06:00 UTC
-    "injuries":    "0 8 * * *",     # Every day at 08:00 UTC
-    "odds":        "0 10 * * *",    # Every day at 10:00 UTC
+    "fixtures": "0 2 * * *",  # Every day at 02:00 UTC
+    "results": "0 4 * * *",  # Every day at 04:00 UTC
+    "squad_stats": "0 6 * * 1",  # Every Monday at 06:00 UTC
+    "injuries": "0 8 * * *",  # Every day at 08:00 UTC
+    "odds": "0 10 * * *",  # Every day at 10:00 UTC
 }

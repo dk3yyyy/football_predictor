@@ -13,20 +13,20 @@ Output schema per player record:
   expected_return, source, scraped_at
 """
 
-import re
 import logging
+import re
 from datetime import datetime
 from typing import Optional
 
 import requests
 from bs4 import BeautifulSoup
 
-from scrapers.base import BaseScraper, ScraperError
 from config.settings import (
     SOCCERWAY_BASE_URL,
-    SOCCERWAY_DELAY_MIN,
     SOCCERWAY_DELAY_MAX,
+    SOCCERWAY_DELAY_MIN,
 )
+from scrapers.base import BaseScraper
 
 logger = logging.getLogger(__name__)
 
@@ -34,41 +34,61 @@ logger = logging.getLogger(__name__)
 # Format: team_name → soccerway path
 SOCCERWAY_TEAMS = {
     # Premier League
-    "Arsenal":              "/teams/england/arsenal-football-club/683/",
-    "Chelsea":              "/teams/england/chelsea-fc/631/",
-    "Liverpool":            "/teams/england/liverpool-fc/663/",
-    "Manchester City":      "/teams/england/manchester-city-fc/664/",
-    "Manchester United":    "/teams/england/manchester-united-fc/665/",
-    "Tottenham Hotspur":    "/teams/england/tottenham-hotspur/674/",
-    "Newcastle United":     "/teams/england/newcastle-united-fc/667/",
-    "Aston Villa":          "/teams/england/aston-villa-fc/625/",
+    "Arsenal": "/teams/england/arsenal-football-club/683/",
+    "Chelsea": "/teams/england/chelsea-fc/631/",
+    "Liverpool": "/teams/england/liverpool-fc/663/",
+    "Manchester City": "/teams/england/manchester-city-fc/664/",
+    "Manchester United": "/teams/england/manchester-united-fc/665/",
+    "Tottenham Hotspur": "/teams/england/tottenham-hotspur/674/",
+    "Newcastle United": "/teams/england/newcastle-united-fc/667/",
+    "Aston Villa": "/teams/england/aston-villa-fc/625/",
     # La Liga
-    "Real Madrid":          "/teams/spain/real-madrid-cf/2832/",
-    "FC Barcelona":         "/teams/spain/futbol-club-barcelona/2817/",
-    "Atletico Madrid":      "/teams/spain/atletico-de-madrid/2813/",
+    "Real Madrid": "/teams/spain/real-madrid-cf/2832/",
+    "FC Barcelona": "/teams/spain/futbol-club-barcelona/2817/",
+    "Atletico Madrid": "/teams/spain/atletico-de-madrid/2813/",
     # Bundesliga
-    "Bayern Munich":        "/teams/germany/fc-bayern-munchen/2364/",
-    "Borussia Dortmund":    "/teams/germany/borussia-dortmund/2369/",
+    "Bayern Munich": "/teams/germany/fc-bayern-munchen/2364/",
+    "Borussia Dortmund": "/teams/germany/borussia-dortmund/2369/",
     # Serie A
-    "Inter Milan":          "/teams/italy/fc-internazionale-milano/2736/",
-    "AC Milan":             "/teams/italy/associazione-calcio-milan/2719/",
-    "Juventus":             "/teams/italy/juventus-fc/2741/",
+    "Inter Milan": "/teams/italy/fc-internazionale-milano/2736/",
+    "AC Milan": "/teams/italy/associazione-calcio-milan/2719/",
+    "Juventus": "/teams/italy/juventus-fc/2741/",
     # Ligue 1
-    "Paris Saint-Germain":  "/teams/france/paris-saint-germain-fc/3004/",
+    "Paris Saint-Germain": "/teams/france/paris-saint-germain-fc/3004/",
 }
 
 # Keywords that indicate unavailability
-INJURY_KEYWORDS    = ["injury", "injured", "hamstring", "knee", "muscle", "fracture",
-                      "strain", "torn", "ligament", "concussion", "foot", "ankle", "back"]
-SUSPENSION_KEYWORDS = ["suspended", "suspension", "ban", "banned", "red card",
-                       "accumulated", "yellow cards"]
-DOUBT_KEYWORDS     = ["doubt", "doubtful", "fitness", "knock", "minor"]
+INJURY_KEYWORDS = [
+    "injury",
+    "injured",
+    "hamstring",
+    "knee",
+    "muscle",
+    "fracture",
+    "strain",
+    "torn",
+    "ligament",
+    "concussion",
+    "foot",
+    "ankle",
+    "back",
+]
+SUSPENSION_KEYWORDS = [
+    "suspended",
+    "suspension",
+    "ban",
+    "banned",
+    "red card",
+    "accumulated",
+    "yellow cards",
+]
+DOUBT_KEYWORDS = ["doubt", "doubtful", "fitness", "knock", "minor"]
 
 
 class InjuryScraper(BaseScraper):
     """Scrapes injury and suspension data for club squads."""
 
-    RATE_LIMIT_CALLS  = 10
+    RATE_LIMIT_CALLS = 10
     RATE_LIMIT_PERIOD = 60.0
 
     def __init__(self):
@@ -96,25 +116,21 @@ class InjuryScraper(BaseScraper):
             logger.error("Failed to fetch Soccerway page for %s: %s", team_name, exc)
             return []
 
-        soup    = BeautifulSoup(resp.text, "html.parser")
+        soup = BeautifulSoup(resp.text, "html.parser")
         records = []
 
         # Soccerway lists injuries in a section with class "injuries" or similar
         injury_section = (
             soup.find("div", {"class": "injuries"})
             or soup.find("section", {"class": re.compile(r"injur", re.I)})
-            or soup.find("div",     {"id":    re.compile(r"injur", re.I)})
+            or soup.find("div", {"id": re.compile(r"injur", re.I)})
         )
 
         if injury_section:
-            records.extend(
-                self._parse_injury_section(injury_section, team_name, "soccerway.com")
-            )
+            records.extend(self._parse_injury_section(injury_section, team_name, "soccerway.com"))
         else:
             # Fallback: scan all player rows for injury indicators
-            records.extend(
-                self._scan_squad_table(soup, team_name)
-            )
+            records.extend(self._scan_squad_table(soup, team_name))
 
         self.log_result(len(records), f"{team_name} injury records")
         return records
@@ -132,33 +148,35 @@ class InjuryScraper(BaseScraper):
                 continue
 
             player_cell = cells[0]
-            info_cell   = cells[1] if len(cells) > 1 else None
+            info_cell = cells[1] if len(cells) > 1 else None
 
             player_name = player_cell.get_text(strip=True)
             player_link = player_cell.find("a")
-            player_id   = None
+            player_id = None
             if player_link:
                 href = player_link.get("href", "")
-                m    = re.search(r"/(\d+)/?$", href)
+                m = re.search(r"/(\d+)/?$", href)
                 if m:
                     player_id = int(m.group(1))
 
             info_text = info_cell.get_text(strip=True) if info_cell else ""
-            status    = self._classify_status(info_text)
+            status = self._classify_status(info_text)
 
             if not player_name or player_name.lower() in ("player", "name", ""):
                 continue
 
-            records.append({
-                "team_name":       team_name,
-                "player_name":     player_name,
-                "player_id":       player_id,
-                "status":          status,
-                "reason":          info_text,
-                "expected_return": self._extract_return_date(info_text),
-                "source":          source,
-                "scraped_at":      datetime.utcnow().isoformat(),
-            })
+            records.append(
+                {
+                    "team_name": team_name,
+                    "player_name": player_name,
+                    "player_id": player_id,
+                    "status": status,
+                    "reason": info_text,
+                    "expected_return": self._extract_return_date(info_text),
+                    "source": source,
+                    "scraped_at": datetime.utcnow().isoformat(),
+                }
+            )
         return records
 
     def _scan_squad_table(self, soup: BeautifulSoup, team_name: str) -> list[dict]:
@@ -177,21 +195,23 @@ class InjuryScraper(BaseScraper):
 
                 # First cell is usually the player name
                 player_name = cells[0].get_text(strip=True) if cells else ""
-                status      = self._classify_status(row_text)
+                status = self._classify_status(row_text)
 
                 if not player_name or len(player_name) < 3:
                     continue
 
-                records.append({
-                    "team_name":       team_name,
-                    "player_name":     player_name,
-                    "player_id":       None,
-                    "status":          status,
-                    "reason":          row_text[:200],
-                    "expected_return": self._extract_return_date(row_text),
-                    "source":          self.source_name,
-                    "scraped_at":      datetime.utcnow().isoformat(),
-                })
+                records.append(
+                    {
+                        "team_name": team_name,
+                        "player_name": player_name,
+                        "player_id": None,
+                        "status": status,
+                        "reason": row_text[:200],
+                        "expected_return": self._extract_return_date(row_text),
+                        "source": self.source_name,
+                        "scraped_at": datetime.utcnow().isoformat(),
+                    }
+                )
         return records
 
     # ── BBC Sport team news ───────────────────────────────────────────────────
@@ -208,7 +228,7 @@ class InjuryScraper(BaseScraper):
             logger.error("Failed BBC Sport page for %s: %s", team_name, exc)
             return []
 
-        soup    = BeautifulSoup(resp.text, "html.parser")
+        soup = BeautifulSoup(resp.text, "html.parser")
         records = []
 
         # BBC structures team news in <li> or <p> elements inside an "injuries" section
@@ -221,16 +241,18 @@ class InjuryScraper(BaseScraper):
             if len(text) < 10 or len(text) > 400:
                 continue
 
-            records.append({
-                "team_name":       team_name,
-                "player_name":     self._extract_player_name(text),
-                "player_id":       None,
-                "status":          self._classify_status(text_lower),
-                "reason":          text[:300],
-                "expected_return": self._extract_return_date(text),
-                "source":          "bbc-sport.co.uk",
-                "scraped_at":      datetime.utcnow().isoformat(),
-            })
+            records.append(
+                {
+                    "team_name": team_name,
+                    "player_name": self._extract_player_name(text),
+                    "player_id": None,
+                    "status": self._classify_status(text_lower),
+                    "reason": text[:300],
+                    "expected_return": self._extract_return_date(text),
+                    "source": "bbc-sport.co.uk",
+                    "scraped_at": datetime.utcnow().isoformat(),
+                }
+            )
 
         self.log_result(len(records), f"{team_name} BBC news records")
         return records
@@ -241,7 +263,7 @@ class InjuryScraper(BaseScraper):
         """
         Scrape injury/suspension data for all configured teams (or a subset).
         """
-        teams   = team_names or list(SOCCERWAY_TEAMS.keys())
+        teams = team_names or list(SOCCERWAY_TEAMS.keys())
         all_recs = []
         for name in teams:
             recs = self.scrape_team_injuries(name)
@@ -269,7 +291,7 @@ class InjuryScraper(BaseScraper):
             r"(\d+[-–]\d+\s+(?:weeks?|months?))",
             r"(until\s+\w+(?:\s+\d{1,2})?)",
             r"(returns?\s+\w+(?:\s+\d{1,2})?)",
-            r"(\d{1,2}\s+\w+\s+\d{4})",    # e.g. "15 March 2025"
+            r"(\d{1,2}\s+\w+\s+\d{4})",  # e.g. "15 March 2025"
         ]
         for pattern in patterns:
             m = re.search(pattern, text, re.IGNORECASE)
@@ -291,7 +313,7 @@ class InjuryScraper(BaseScraper):
                 words = candidate.split()
                 if 1 <= len(words) <= 4 and all(w[0].isupper() for w in words if w):
                     return candidate
-        return text[:40]   # fallback: first 40 chars
+        return text[:40]  # fallback: first 40 chars
 
     def scrape(self, **kwargs):
         return self.scrape_all_teams()

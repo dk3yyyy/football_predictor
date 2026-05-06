@@ -1,23 +1,45 @@
 # ⚽ Advanced AI Football Predictor
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![Checked with mypy](https://img.shields.io/badge/mypy-checked-blue)](http://mypy-lang.org/)
+
 An end-to-end Machine Learning pipeline that predicts football match outcomes, expected goals, and highlights value bets using XGBoost.
 
 This project encompasses data scraping, feature engineering, model training, an API backend (FastAPI), and an interactive frontend dashboard (Streamlit) to present high-confidence match predictions and betting suggestions.
 
+---
+
+## 📐 Architecture
+
+```mermaid
+graph TD
+    A[Scrapers] -->|Historical Data| B[(SQLite DB)]
+    A -->|Upcoming Fixtures| B
+    B --> C[Feature Pipeline]
+    C --> D[Model Training]
+    D --> E[XGBoost Models]
+    E --> F[Prediction Engine]
+    F --> G[API Backend - FastAPI]
+    F --> H[Dashboard - Streamlit]
+    F --> I[Betting Suggestions]
+```
+
 ## 🌟 Features
 
-- **Automated Data Pipeline:** Fetches upcoming fixtures and historical match data.
+- **Automated Data Pipeline:** Fetches upcoming fixtures and historical match data from multiple sources.
 - **Machine Learning Models:** 
   - **Outcome Classifier:** XGBoost multiclass classifier predicts Home Win, Draw, or Away Win probabilities.
   - **Goals Regressors:** XGBoost regressors with Poisson objectives estimate expected goals for both teams.
-- **Betting Engine (`suggest_bets.py`):** Automatically identifies and suggests the best value bets for platforms like SportyBet based on calculated model confidence and projected goal totals.
+- **Betting Engine (`suggest_bets.py`):** Automatically identifies and suggests the best value bets based on calculated model confidence and projected goal totals.
 - **RESTful API (`FastAPI`):** Programmatic access to the predictions, enabling easy integration with other tools or bots.
 - **Interactive Dashboard (`Streamlit`):** A clean, user-friendly UI to view upcoming fixture predictions, model accuracy metrics, and expected probabilities.
 - **Job Scheduler:** Automated daily updates for fetching fixtures and updating predictions.
 
 ## 🛠️ Tech Stack
 
-- **Python 3.x**
+- **Python 3.9+**
 - **Machine Learning:** `xgboost`, `scikit-learn`, `pandas`, `numpy`
 - **Backend/API:** `FastAPI`, `uvicorn`, `SQLAlchemy`, `SQLite`
 - **Frontend/Dashboard:** `Streamlit`
@@ -31,51 +53,55 @@ This project encompasses data scraping, feature engineering, model training, an 
    cd football_predictor
    ```
 
-2. **Set up a virtual environment (Recommended):**
+2. **Set up environment:**
+   Using the provided `Makefile`:
+   ```bash
+   make install
+   ```
+   Or manually:
    ```bash
    python3 -m venv venv
-   source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+   source venv/bin/activate
+   pip install -e .
    ```
 
-3. **Install Dependencies:**
+3. **Configure Environment Variables:**
    ```bash
-   pip install -r requirements.txt
+   cp .env.example .env
+   # Edit .env and add your FOOTBALL_DATA_API_KEY
    ```
-
-4. **Environment Variables:**
-   Create a `.env` file in the root directory. Add any necessary API keys or database configuration strings there (refer to `config/` if necessary).
 
 ## 🏃‍♂️ Usage
 
-### Training the Models
-Before generating predictions, you need to train the machine learning models.
+### 🛠️ Development Tasks
+The project includes a `Makefile` for common tasks:
+- `make lint`: Run code quality checks.
+- `make test`: Run the test suite.
+- `make format`: Automatically format the code.
+
+### 📈 Training the Models
+Before generating predictions, you need to train the machine learning models:
 ```bash
 python -m models.train
 ```
 
-### Running the API Server
+### 🌐 Running the API Server
 To start the FastAPI backend:
 ```bash
-uvicorn api.main:app --reload
+make run-api
 ```
-The API will be available at `http://127.0.0.1:8000`. You can explore the interactive docs at `/docs`.
+The API will be available at `http://127.0.0.1:8000`. Explore the interactive docs at `/docs`.
 
-### Running the Streamlit Dashboard
+### 📊 Running the Streamlit Dashboard
 To launch the interactive dashboard:
 ```bash
-streamlit run dashboard/app.py
+make run-dashboard
 ```
 
-### Getting Betting Suggestions
+### 💰 Getting Betting Suggestions
 To get a quick terminal output of the top recommended bets for today:
 ```bash
 python suggest_bets.py
-```
-
-### Custom Match Predictions
-If you want to run predictions for specific custom matches:
-```bash
-python predict_user_list.py
 ```
 
 ## 📂 Project Structure
@@ -92,16 +118,16 @@ football_predictor/
 ├── scrapers/              # Scripts to fetch football fixture and result data
 ├── tests/                 # Unit testing suite
 │
+├── Makefile               # Task runner for development
+├── pyproject.toml         # Project configuration and dependencies
 ├── backfill.py            # Historical data backfilling utility
 ├── predict_advanced.py    # Advanced prediction logic
-├── predict_custom.py      # Predict outcomes for individual inputs
-├── predict_real.py        # Real-time prediction script
-├── predict_user_list.py   # Batch process a user-provided list of matches
-├── scheduler.py           # Automated job scheduling logic
 ├── suggest_bets.py        # Analyzes predictions to output recommended bets
-├── requirements.txt       # Project dependencies
 └── README.md              # Project documentation
 ```
+
+## 🤝 Contributing
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## 📄 License
 This project is open-source and available under the [MIT License](LICENSE).

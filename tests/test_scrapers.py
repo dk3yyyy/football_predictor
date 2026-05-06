@@ -5,16 +5,15 @@ Run with: pytest tests/test_scrapers.py -v
 These tests mock HTTP responses so they run offline without API keys.
 """
 
-import json
-import pytest
 from unittest.mock import MagicMock, patch
 
-from scrapers.base import BaseScraper, RateLimiter, ScraperError
-from scrapers.football_data import FootballDataScraper
+import pytest
+
+from scrapers.base import RateLimiter, ScraperError
 from scrapers.fbref import FBrefScraper
+from scrapers.football_data import FootballDataScraper
 from scrapers.injuries import InjuryScraper
 from scrapers.odds import OddsScraper
-
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -40,8 +39,11 @@ SAMPLE_STANDING = {
     "position": 1,
     "team": {"id": 57, "name": "Arsenal FC"},
     "playedGames": 10,
-    "won": 8, "draw": 1, "lost": 1,
-    "goalsFor": 22, "goalsAgainst": 8,
+    "won": 8,
+    "draw": 1,
+    "lost": 1,
+    "goalsFor": 22,
+    "goalsAgainst": 8,
     "goalDifference": 14,
     "points": 25,
     "form": "W,W,D,W,W",
@@ -50,10 +52,12 @@ SAMPLE_STANDING = {
 
 # ── RateLimiter tests ─────────────────────────────────────────────────────────
 
+
 class TestRateLimiter:
     def test_allows_requests_within_limit(self):
         rl = RateLimiter(calls=5, period=60.0)
         import time
+
         start = time.monotonic()
         for _ in range(5):
             rl.wait()
@@ -72,11 +76,12 @@ class TestRateLimiter:
 
 # ── FootballDataScraper tests ─────────────────────────────────────────────────
 
-class TestFootballDataScraper:
 
+class TestFootballDataScraper:
     @pytest.fixture
     def scraper(self, monkeypatch):
         import scrapers.football_data
+
         monkeypatch.setattr(scrapers.football_data, "FOOTBALL_DATA_API_KEY", "test_key_123")
         return FootballDataScraper()
 
@@ -101,9 +106,7 @@ class TestFootballDataScraper:
 
     def test_scrape_fixtures_calls_api(self, scraper, monkeypatch):
         mock_response = MagicMock()
-        mock_response.json.return_value = {
-            "matches": [SAMPLE_MATCH]
-        }
+        mock_response.json.return_value = {"matches": [SAMPLE_MATCH]}
         mock_response.raise_for_status = MagicMock()
 
         with patch.object(scraper.session, "get", return_value=mock_response):
@@ -118,7 +121,10 @@ class TestFootballDataScraper:
 
     def test_normalise_match_missing_score(self, scraper):
         """Should handle matches without scores gracefully (upcoming fixtures)."""
-        raw = {**SAMPLE_MATCH, "score": {"winner": None, "fullTime": {"home": None, "away": None}, "halfTime": {}}}
+        raw = {
+            **SAMPLE_MATCH,
+            "score": {"winner": None, "fullTime": {"home": None, "away": None}, "halfTime": {}},
+        }
         result = scraper._normalise_match(raw)
         assert result["home_goals_ft"] is None
         assert result["away_goals_ft"] is None
@@ -126,8 +132,8 @@ class TestFootballDataScraper:
 
 # ── FBrefScraper tests ────────────────────────────────────────────────────────
 
-class TestFBrefScraper:
 
+class TestFBrefScraper:
     @pytest.fixture
     def scraper(self):
         return FBrefScraper()
@@ -157,8 +163,8 @@ class TestFBrefScraper:
 
 # ── OddsScraper tests ─────────────────────────────────────────────────────────
 
-class TestOddsScraper:
 
+class TestOddsScraper:
     @pytest.fixture
     def scraper(self):
         return OddsScraper()
@@ -198,8 +204,8 @@ class TestOddsScraper:
 
 # ── InjuryScraper tests ───────────────────────────────────────────────────────
 
-class TestInjuryScraper:
 
+class TestInjuryScraper:
     @pytest.fixture
     def scraper(self):
         return InjuryScraper()
