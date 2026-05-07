@@ -3,7 +3,6 @@ import logging
 import os
 
 import joblib
-import pandas as pd
 
 from db.database import Database
 from features.pipeline import FeaturePipeline
@@ -15,7 +14,7 @@ MODELS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def get_predictions() -> list[dict]:
     """Generates predictions for upcoming matches, and saves to the Database log."""
-    from models.train import MODEL_FEATURES, GOAL_FEATURES
+    from models.train import GOAL_FEATURES, MODEL_FEATURES
 
     # Load models
     out_path = os.path.join(MODELS_DIR, "outcome_ensemble.joblib")

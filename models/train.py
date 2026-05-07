@@ -52,7 +52,6 @@ LABEL_MAP = {"AWAY_TEAM": 0, "DRAW": 1, "HOME_TEAM": 2}
 
 def train_outcome_model():
     """Trains a stacked model: goals predictions -> outcome prediction."""
-    from sklearn.calibration import CalibratedClassifierCV
     import joblib
 
     pipeline = FeaturePipeline()

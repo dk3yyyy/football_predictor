@@ -137,7 +137,8 @@ def load_historical():
 def load_feature_importance():
     try:
         import joblib
-        from models.train import MODEL_FEATURES, GOAL_FEATURES
+
+        from models.train import GOAL_FEATURES, MODEL_FEATURES
 
         model = joblib.load("models/outcome_ensemble.joblib")
         # CalibratedClassifierCV wraps the base model
@@ -424,45 +425,45 @@ elif page == "📈 Model Performance":
 
 elif page == "✅ Results":
     st.title("✅ Prediction Results")
-    
+
     # Filter options
     col_filter1, col_filter2 = st.columns(2)
     with col_filter1:
         show_type = st.radio("Show:", ["All", "Live Only", "Backtest Only"], horizontal=True)
-    
+
     # Build query based on filter
     query = """
-        SELECT match_date, home_team, away_team, 
+        SELECT match_date, home_team, away_team,
                pred_home_win, pred_draw, pred_away_win,
                actual_winner, correct,
                model_name
         FROM predictions_log
         WHERE actual_winner IS NOT NULL
     """
-    
+
     with db.engine.connect() as conn:
         df = pd.read_sql(text(query), conn)
-    
+
     if df.empty:
         st.info("No completed predictions yet.")
     else:
         # Split into live vs backtest
         df["is_backtest"] = df["model_name"].str.contains("backtest", case=False)
-        
+
         # Apply filter
         if show_type == "Live Only":
             df = df[~df["is_backtest"]]
         elif show_type == "Backtest Only":
             df = df[df["is_backtest"]]
-        
+
         # Summary metrics
         st.subheader("📊 Performance Summary")
-        
+
         col1, col2, col3, col4 = st.columns(4)
-        
+
         live_df = df[~df["is_backtest"]]
         backtest_df = df[df["is_backtest"]]
-        
+
         with col1:
             total = len(df)
             if total > 0:
@@ -470,29 +471,29 @@ elif page == "✅ Results":
                 st.metric("Accuracy", f"{acc:.1f}%", delta=f"{acc - 50:.1f}% vs baseline")
             else:
                 st.metric("Accuracy", "N/A")
-        
+
         with col2:
             st.metric("Total", len(df))
-        
+
         with col3:
             if not live_df.empty:
                 live_acc = live_df["correct"].mean() * 100
                 st.metric("Live", f"{live_acc:.1f}%")
             else:
                 st.metric("Live", "0")
-        
+
         with col4:
             if not backtest_df.empty:
                 bt_acc = backtest_df["correct"].mean() * 100
                 st.metric("Backtest", f"{bt_acc:.1f}%")
             else:
                 st.metric("Backtest", "0")
-        
+
         st.markdown("---")
-        
+
         # Wins and Losses tabs
         wins_tab, losses_tab, all_tab = st.tabs(["✅ Wins", "❌ Losses", "📋 All Results"])
-        
+
         with wins_tab:
             win_df = df[df["correct"] == 1].sort_values("match_date", ascending=False)
             st.subheader(f"Correct Predictions ({len(win_df)})")
@@ -503,7 +504,7 @@ elif page == "✅ Results":
                     "pred_away_win": "{:.1%}"
                 })
                 st.dataframe(styled, use_container_width=True)
-        
+
         with losses_tab:
             loss_df = df[df["correct"] == 0].sort_values("match_date", ascending=False)
             st.subheader(f"Incorrect Predictions ({len(loss_df)})")
@@ -513,7 +514,7 @@ elif page == "✅ Results":
                     "pred_away_win": "{:.1%}"
                 })
                 st.dataframe(styled, use_container_width=True)
-        
+
         with all_tab:
             st.subheader(f"All Results ({len(df)})")
             # Simple color mapping

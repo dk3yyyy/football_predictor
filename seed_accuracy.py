@@ -1,11 +1,11 @@
-import joblib
 import json
-import pandas as pd
-from sklearn.metrics import accuracy_score
-from features.pipeline import FeaturePipeline
-from models.train import MODEL_FEATURES, GOAL_FEATURES, LABEL_MAP
-from db.database import Database
 import logging
+
+import joblib
+
+from db.database import Database
+from features.pipeline import FeaturePipeline
+from models.train import GOAL_FEATURES, LABEL_MAP, MODEL_FEATURES
 
 logging.basicConfig(level=logging.INFO)
 
@@ -56,21 +56,21 @@ predictions = []
 for i in range(len(X_test)):
     row_base = X_base.iloc[test_start + i]
     row_df = df_test.iloc[i]
-    
+
     pred_idx = test_start + i
     pred_home_val = pred_home[pred_idx]
     pred_away_val = pred_away[pred_idx]
-    
+
     y_pred_val = int(y_pred[i])
     predicted_winner = LABEL_MAP_REV.get(y_pred_val, "HOME_TEAM")
     actual_winner = label_to_winner.get(y_test.iloc[i])
     correct = 1 if predicted_winner == actual_winner else 0
-    
+
     features_json = {k: float(row_base[k]) for k in MODEL_FEATURES}
     features_json["predicted_home_goals"] = float(pred_home_val)
     features_json["predicted_away_goals"] = float(pred_away_val)
     features_json["predicted_goal_diff"] = float(pred_home_val - pred_away_val)
-    
+
     pred_record = {
         "match_id": int(row_df["match_id"]),
         "home_team": row_df["home_team_name"],
@@ -89,7 +89,7 @@ for i in range(len(X_test)):
         "actual_winner": actual_winner,
         "correct": correct,
     }
-    
+
     predictions.append(pred_record)
 
 for pred in predictions:
@@ -104,9 +104,11 @@ with db.engine.connect() as conn:
             SUM(CASE WHEN correct=1 THEN 1 ELSE 0 END) as correct
         FROM predictions_log WHERE actual_winner IS NOT NULL
     ''')).fetchone()
-    
-    if result.total:
-        print(f'=== Model Accuracy ===')
-        print(f'Total: {result.total}')
-        print(f'Correct: {result.correct}')
-        print(f'Accuracy: {result.correct/result.total*100:.1f}%')
+
+    if result and result.total:
+        print("=== Model Accuracy ===")
+        print(f"Total: {result.total}")
+        print(f"Correct: {result.correct}")
+        total = result.total
+        correct = result.correct
+        print(f"Accuracy: {correct/total*100:.1f}%")

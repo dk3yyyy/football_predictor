@@ -7,7 +7,7 @@ import pandas as pd
 
 from db.database import Database
 from features.pipeline import FeaturePipeline
-from models.train import MODEL_FEATURES, GOAL_FEATURES
+from models.train import GOAL_FEATURES, MODEL_FEATURES
 
 # Suppress XGBoost warnings
 warnings.filterwarnings("ignore")

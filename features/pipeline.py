@@ -18,13 +18,13 @@ class FeaturePipeline:
     - Fatigue (days since last match)
     """
 
-    def __init__(self, db: Database = None):
+    def __init__(self, db: "Database" | None = None):
         if db is None:
             self.db = Database()
         else:
             self.db = db
 
-    def load_finished_matches(self, limit: int = None) -> pd.DataFrame:
+    def load_finished_matches(self, limit: int | None = None) -> pd.DataFrame:
         """Loads all completed matches with results."""
         query = "SELECT * FROM matches WHERE status = 'FINISHED' ORDER BY utc_date ASC"
         if limit:
@@ -314,7 +314,7 @@ class FeaturePipeline:
         team_logs = pd.concat([home_logs, away_logs]).sort_values(by=["team", "date"]).reset_index(drop=True)
 
         # Initialize Elo tracking dict
-        team_elo = {}
+        team_elo: dict[str, float] = {}
         ratings = []
 
         for _, row in team_logs.iterrows():
