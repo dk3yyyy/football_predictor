@@ -1,7 +1,10 @@
 import subprocess
-from datetime import datetime
+import sys
+from datetime import datetime, timezone
+
 import pandas as pd
 from sqlalchemy import text
+
 from db.database import Database
 from scheduler import job_fixtures
 
@@ -11,8 +14,6 @@ try:
     job_fixtures()
 except Exception as e:
     print(f"Error fetching fixtures: {e}")
-
-import sys
 
 # 2. Let's run the predictor to evaluate those matches
 print("Running prediction models on upcoming games...")
@@ -47,7 +48,7 @@ query = """
     ORDER BY m.utc_date ASC
 """
 
-now_str = datetime.utcnow().isoformat()
+now_str = datetime.now(timezone.utc).isoformat()
 with db.engine.connect() as conn:
     df = pd.read_sql(text(query), conn, params={"now": now_str})
 

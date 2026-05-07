@@ -15,7 +15,7 @@ Output schema per player record:
 
 import logging
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 import requests
@@ -174,7 +174,7 @@ class InjuryScraper(BaseScraper):
                     "reason": info_text,
                     "expected_return": self._extract_return_date(info_text),
                     "source": source,
-                    "scraped_at": datetime.utcnow().isoformat(),
+                    "scraped_at": datetime.now(timezone.utc).isoformat(),
                 }
             )
         return records
@@ -209,7 +209,7 @@ class InjuryScraper(BaseScraper):
                         "reason": row_text[:200],
                         "expected_return": self._extract_return_date(row_text),
                         "source": self.source_name,
-                        "scraped_at": datetime.utcnow().isoformat(),
+                        "scraped_at": datetime.now(timezone.utc).isoformat(),
                     }
                 )
         return records
@@ -250,7 +250,7 @@ class InjuryScraper(BaseScraper):
                     "reason": text[:300],
                     "expected_return": self._extract_return_date(text),
                     "source": "bbc-sport.co.uk",
-                    "scraped_at": datetime.utcnow().isoformat(),
+                    "scraped_at": datetime.now(timezone.utc).isoformat(),
                 }
             )
 

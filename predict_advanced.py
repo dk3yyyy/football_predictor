@@ -7,13 +7,13 @@ import pandas as pd
 
 from db.database import Database
 from features.pipeline import FeaturePipeline
-from models.train import MODEL_FEATURES
+from models.train import MODEL_FEATURES, GOAL_FEATURES
 
 # Suppress XGBoost warnings
 warnings.filterwarnings("ignore")
 logging.basicConfig(level=logging.ERROR)
 
-MODELS_DIR = os.path.dirname(os.path.abspath("models/train.py"))
+MODELS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Mapping user names to DB names
 TEAM_MAPPING = {
@@ -98,7 +98,7 @@ def predict_custom_batch(matches_list):
     db = Database()
     pipeline = FeaturePipeline(db)
 
-    outcome_model = joblib.load(os.path.join(MODELS_DIR, "outcome_xgb.joblib"))
+    outcome_model = joblib.load(os.path.join(MODELS_DIR, "outcome_ensemble.joblib"))
     home_model = joblib.load(os.path.join(MODELS_DIR, "goals_home_xgb.joblib"))
     away_model = joblib.load(os.path.join(MODELS_DIR, "goals_away_xgb.joblib"))
 
@@ -124,11 +124,21 @@ def predict_custom_batch(matches_list):
         }
 
         df_predict = pd.DataFrame([custom_features])
-        X = df_predict[MODEL_FEATURES]
+        df_predict = df_predict.reindex(columns=MODEL_FEATURES, fill_value=0.0)
+        X_base = df_predict[MODEL_FEATURES]
 
-        probs = outcome_model.predict_proba(X)[0]
-        hg = home_model.predict(X)[0]
-        ag = away_model.predict(X)[0]
+        # Stacked: get goal predictions first
+        hg_raw = home_model.predict(X_base)[0]
+        ag_raw = away_model.predict(X_base)[0]
+        X_stacked = X_base.copy()
+        X_stacked["predicted_home_goals"] = hg_raw
+        X_stacked["predicted_away_goals"] = ag_raw
+        X_stacked["predicted_goal_diff"] = hg_raw - ag_raw
+        all_features = MODEL_FEATURES + GOAL_FEATURES
+
+        probs = outcome_model.predict_proba(X_stacked[all_features])[0]
+        hg = hg_raw
+        ag = ag_raw
 
         results.append(
             {

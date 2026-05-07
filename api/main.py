@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import Depends, FastAPI, HTTPException
@@ -34,7 +34,7 @@ def get_db():
 @app.get("/health")
 def health_check():
     """Simple API health check."""
-    return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}
+    return {"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()}
 
 
 @app.get("/predictions/upcoming")
@@ -47,7 +47,7 @@ def upcoming_predictions(league_key: Optional[str] = None, db: Database = Depend
         WHERE actual_winner IS NULL
         AND match_date >= :today
     """
-    params = {"today": datetime.utcnow().isoformat()}
+    params = {"today": datetime.now(timezone.utc).isoformat()}
 
     if league_key:
         query += " AND league_key = :league"
@@ -76,7 +76,7 @@ def trigger_predictions():
 
 
 @app.get("/metrics")
-def get_metrics(model_name: str = "xgboost-v1", db: Database = Depends(get_db)):
+def get_metrics(model_name: str = "xgboost-v2-stacked", db: Database = Depends(get_db)):
     """
     Returns rolling accuracy stats for the given model.
     """

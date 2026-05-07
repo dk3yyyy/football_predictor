@@ -17,7 +17,7 @@ about injuries, weather, and form before the public.
 import json
 import logging
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 import requests
@@ -161,7 +161,7 @@ class OddsScraper(BaseScraper):
             "prob_draw": probs.get("draw"),
             "prob_away": probs.get("away"),
             "market_overround": probs.get("overround"),
-            "scraped_at": datetime.utcnow().isoformat(),
+            "scraped_at": datetime.now(timezone.utc).isoformat(),
         }
 
     # ── JSON data fallback ────────────────────────────────────────────────────
@@ -218,7 +218,7 @@ class OddsScraper(BaseScraper):
             "prob_draw": probs.get("draw"),
             "prob_away": probs.get("away"),
             "market_overround": probs.get("overround"),
-            "scraped_at": datetime.utcnow().isoformat(),
+            "scraped_at": datetime.now(timezone.utc).isoformat(),
         }
 
     # ── Probability maths ─────────────────────────────────────────────────────

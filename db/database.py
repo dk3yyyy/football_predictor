@@ -18,7 +18,7 @@ We use SQLAlchemy Core (not ORM) for lean, fast inserts.
 
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from sqlalchemy import (
@@ -292,7 +292,7 @@ class Database:
     def log_prediction(self, record: dict) -> int:
         if isinstance(record.get("features_json"), dict):
             record = {**record, "features_json": json.dumps(record["features_json"])}
-        record.setdefault("created_at", datetime.utcnow().isoformat())
+        record.setdefault("created_at", datetime.now(timezone.utc).isoformat())
         return self._bulk_insert(predictions_log, [record])
 
     def update_prediction_result(self, prediction_id: int, actual_winner: str):
@@ -317,6 +317,25 @@ class Database:
                 text("UPDATE predictions_log SET actual_winner=:w, correct=:c WHERE id=:id"),
                 {"w": actual_winner, "c": correct, "id": prediction_id},
             )
+
+    def update_predictions_for_match(self, match_id: int, actual_winner: str):
+        """Batch update all predictions for a match with the actual result."""
+        with self.engine.begin() as conn:
+            rows = conn.execute(
+                text("SELECT id, pred_home_win, pred_draw, pred_away_win FROM predictions_log WHERE match_id = :mid AND actual_winner IS NULL"),
+                {"mid": match_id},
+            ).fetchall()
+
+            for row_id, ph, pd, pa in rows:
+                correct = (
+                    (actual_winner == "HOME_TEAM" and ph > pd and ph > pa)
+                    or (actual_winner == "DRAW" and pd > ph and pd > pa)
+                    or (actual_winner == "AWAY_TEAM" and pa > ph and pa > pd)
+                )
+                conn.execute(
+                    text("UPDATE predictions_log SET actual_winner=:w, correct=:c WHERE id=:id"),
+                    {"w": actual_winner, "c": correct, "id": row_id},
+                )
 
     # ── Query helpers ─────────────────────────────────────────────────────────
 

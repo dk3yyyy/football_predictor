@@ -14,7 +14,7 @@ Docs: https://docs.football-data.org/general/v4/
 """
 
 import logging
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 
 from config.settings import (
@@ -242,7 +242,7 @@ class FootballDataScraper(BaseScraper):
             # Referee
             "referee": (raw.get("referees") or [{}])[0].get("name"),
             # Timestamps
-            "scraped_at": datetime.utcnow().isoformat(),
+            "scraped_at": datetime.now(timezone.utc).isoformat(),
         }
 
     @staticmethod
@@ -312,7 +312,7 @@ class FootballDataScraper(BaseScraper):
             "goals": goals,
             "bookings": bookings,
             "subs": subs,
-            "scraped_at": datetime.utcnow().isoformat(),
+            "scraped_at": datetime.now(timezone.utc).isoformat(),
         }
 
     @staticmethod
@@ -333,7 +333,7 @@ class FootballDataScraper(BaseScraper):
             "goal_diff": row.get("goalDifference"),
             "points": row.get("points"),
             "form": row.get("form"),  # e.g. "W,D,L,W,W"
-            "scraped_at": datetime.utcnow().isoformat(),
+            "scraped_at": datetime.now(timezone.utc).isoformat(),
         }
 
     @staticmethod
@@ -348,7 +348,7 @@ class FootballDataScraper(BaseScraper):
             "founded": raw.get("founded"),
             "colors": raw.get("clubColors"),
             "website": raw.get("website"),
-            "scraped_at": datetime.utcnow().isoformat(),
+            "scraped_at": datetime.now(timezone.utc).isoformat(),
         }
 
     # ── Convenience: scrape all leagues ───────────────────────────────────────

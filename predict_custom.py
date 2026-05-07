@@ -6,12 +6,12 @@ import warnings
 import joblib
 import pandas as pd
 
-from models.train import MODEL_FEATURES
+from models.train import MODEL_FEATURES, GOAL_FEATURES
 
 # Suppress XGBoost warnings
 warnings.filterwarnings("ignore")
 
-MODELS_DIR = os.path.dirname(os.path.abspath("models/train.py"))
+MODELS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def predict_custom_match(home_team: str, away_team: str):
@@ -19,7 +19,7 @@ def predict_custom_match(home_team: str, away_team: str):
     Generates a prediction for an arbitrary match-up without requiring
     the teams to exist in the database schedule.
     """
-    out_path = os.path.join(MODELS_DIR, "outcome_xgb.joblib")
+    out_path = os.path.join(MODELS_DIR, "outcome_ensemble.joblib")
 
     if not os.path.exists(out_path):
         print("Error: No trained models found. You must run `python -m models.train` first.")
@@ -32,7 +32,7 @@ def predict_custom_match(home_team: str, away_team: str):
         train_goals_model()
 
     try:
-        outcome_model = joblib.load(os.path.join(MODELS_DIR, "outcome_xgb.joblib"))
+        outcome_model = joblib.load(os.path.join(MODELS_DIR, "outcome_ensemble.joblib"))
         home_model = joblib.load(os.path.join(MODELS_DIR, "goals_home_xgb.joblib"))
         away_model = joblib.load(os.path.join(MODELS_DIR, "goals_away_xgb.joblib"))
     except FileNotFoundError:
@@ -60,12 +60,22 @@ def predict_custom_match(home_team: str, away_team: str):
     # You could add logic here to query the DB for their real stats if they existed
 
     df_predict = pd.DataFrame([custom_features])
-    X = df_predict[MODEL_FEATURES]
+    df_predict = df_predict.reindex(columns=MODEL_FEATURES, fill_value=0.0)
+    X_base = df_predict[MODEL_FEATURES]
+
+    # Stacked: get goal predictions first
+    hg_raw = home_model.predict(X_base)[0]
+    ag_raw = away_model.predict(X_base)[0]
+    X_stacked = X_base.copy()
+    X_stacked["predicted_home_goals"] = hg_raw
+    X_stacked["predicted_away_goals"] = ag_raw
+    X_stacked["predicted_goal_diff"] = hg_raw - ag_raw
+    all_features = MODEL_FEATURES + GOAL_FEATURES
 
     # 0 = AWAY, 1 = DRAW, 2 = HOME
-    probs = outcome_model.predict_proba(X)[0]
-    hg = home_model.predict(X)[0]
-    ag = away_model.predict(X)[0]
+    probs = outcome_model.predict_proba(X_stacked[all_features])[0]
+    hg = hg_raw
+    ag = ag_raw
 
     print("\n" + "=" * 50)
     print(f"🌍 PREDICTION: {home_team} vs {away_team}")

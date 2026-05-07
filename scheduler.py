@@ -56,7 +56,7 @@ def job_fixtures():
 
 
 def job_results():
-    """Scrape and store recent results, then trigger detail scrape for new matches."""
+    """Scrape and store recent results, then update prediction accuracy."""
     logger.info("JOB results — start")
     scraper = FootballDataScraper()
     all_results = scraper.scrape_all_results(days_back=3)
@@ -64,6 +64,12 @@ def job_results():
     for _league_key, results in all_results.items():
         n = db.upsert_matches(results)
         total += n
+        # Backfill predictions with actual results
+        for match in results:
+            mid = match.get("match_id")
+            winner = match.get("winner")
+            if mid and winner:
+                db.update_predictions_for_match(mid, winner)
     logger.info("JOB results — done (%d total)", total)
 
     # Scrape match details for any finished match still missing lineups

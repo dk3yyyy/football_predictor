@@ -16,7 +16,7 @@ Do not run this more than once per day per league.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 import requests
@@ -197,7 +197,7 @@ class FBrefScraper(BaseScraper):
                     "shots_ag": self._to_int(ag.get("shots")),
                     # Derived
                     "xg_diff": self._safe_diff(row.get("xg"), ag.get("xg")),
-                    "scraped_at": datetime.utcnow().isoformat(),
+                    "scraped_at": datetime.now(timezone.utc).isoformat(),
                 }
             )
 
@@ -233,7 +233,7 @@ class FBrefScraper(BaseScraper):
                     "progressive_carries": self._to_int(row.get("progressive_carries")),
                     "touches_att_third": self._to_int(row.get("touches_att_3rd")),
                     "carries_into_box": self._to_int(row.get("carries_into_penalty_area")),
-                    "scraped_at": datetime.utcnow().isoformat(),
+                    "scraped_at": datetime.now(timezone.utc).isoformat(),
                 }
             )
 
@@ -272,7 +272,7 @@ class FBrefScraper(BaseScraper):
                     "errors": self._to_int(row.get("errors")),
                     "pressures": self._to_int(row.get("pressures")),
                     "pressure_regains": self._to_int(row.get("pressure_regains")),
-                    "scraped_at": datetime.utcnow().isoformat(),
+                    "scraped_at": datetime.now(timezone.utc).isoformat(),
                 }
             )
 

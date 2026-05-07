@@ -5,9 +5,10 @@ import pandas as pd
 
 from db.database import Database
 from features.pipeline import FeaturePipeline
-from models.train import MODEL_FEATURES
+from models.train import MODEL_FEATURES, GOAL_FEATURES
 
-MODELS_DIR = os.path.dirname(os.path.abspath("models/train.py"))
+
+MODELS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def predict_real_match(home_query: str, away_query: str):
@@ -95,16 +96,26 @@ def predict_real_match(home_query: str, away_query: str):
     }
 
     df_predict = pd.DataFrame([features])
-    X = df_predict[MODEL_FEATURES]
+    df_predict = df_predict.reindex(columns=MODEL_FEATURES, fill_value=0.0)
+    X_base = df_predict[MODEL_FEATURES]
 
-    # Predict
-    outcome_model = joblib.load(os.path.join(MODELS_DIR, "outcome_xgb.joblib"))
+    # Load models
+    outcome_model = joblib.load(os.path.join(MODELS_DIR, "outcome_ensemble.joblib"))
     home_model = joblib.load(os.path.join(MODELS_DIR, "goals_home_xgb.joblib"))
     away_model = joblib.load(os.path.join(MODELS_DIR, "goals_away_xgb.joblib"))
 
-    probs = outcome_model.predict_proba(X)[0]
-    hg = home_model.predict(X)[0]
-    ag = away_model.predict(X)[0]
+    # Get goal predictions for stacking
+    hg_raw = home_model.predict(X_base)[0]
+    ag_raw = away_model.predict(X_base)[0]
+    X_stacked = X_base.copy()
+    X_stacked["predicted_home_goals"] = hg_raw
+    X_stacked["predicted_away_goals"] = ag_raw
+    X_stacked["predicted_goal_diff"] = hg_raw - ag_raw
+    all_features = MODEL_FEATURES + GOAL_FEATURES
+
+    probs = outcome_model.predict_proba(X_stacked[all_features])[0]
+    hg = hg_raw
+    ag = ag_raw
 
     print("\n" + "=" * 50)
     print(f"🌍 LA LIGA PREDICTION: {home_name} vs {away_name}")
